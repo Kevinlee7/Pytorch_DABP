@@ -7,54 +7,169 @@ from utils import get_free_gpu, extract_features  # 假设你有一个提取特�
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 
-# 定义保存名称
-save_name = 'omg'
+def plot_embedding(X, y, d, training_mode, save_name):
+    x_min, x_max = np.min(X, 0), np.max(X, 0)
+    X = (X - x_min) / (x_max - x_min)
+    y = list(itertools.chain.from_iterable(y))
+    y = np.asarray(y)
 
-# 可视化函数
-def visualize_tsne(features, title):
+    plt.figure(figsize=(10, 10))
+    for i in range(len(d)):  # X.shape[0] : 1024
+        # plot colored number
+        if d[i] == 0:
+            colors = (0.0, 0.0, 1.0, 1.0)
+        else:
+            colors = (1.0, 0.0, 0.0, 1.0)
+        plt.text(X[i, 0], X[i, 1], str(y[i]),
+                 color=colors,
+                 fontdict={'weight': 'bold', 'size': 9})
+
+    plt.xticks([]), plt.yticks([])
+    if save_name is not None:
+        plt.title(save_name)
+
+    save_folder = 'saved_plot'
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+
+    fig_name = 'saved_plot/' + str(training_mode) + '_' + str(save_name) + '.png'
+    plt.savefig(fig_name)
+    print('{} is saved'.format(fig_name))
+
+
+def visualize(encoder, training_mode, save_name):
+    # Draw 512 samples in test_data
+    source_test_loader = mnist.mnist_test_loader
+    target_test_loader = mnistm.mnistm_test_loader
+
+    # Get source_test samples
+    source_label_list = []
+    source_img_list = []
+    for i, test_data in enumerate(source_test_loader):
+        if i >= 16:  # to get only 512 samples
+            break
+        img, label = test_data
+        label = label.numpy()
+        img = img.cuda()
+        img = torch.cat((img, img, img), 1)  # MNIST channel 1 -> 3
+        source_label_list.append(label)
+        source_img_list.append(img)
+
+    source_img_list = torch.stack(source_img_list)
+    source_img_list = source_img_list.view(-1, 3, 28, 28)
+
+    # Get target_test samples
+    target_label_list = []
+    target_img_list = []
+    for i, test_data in enumerate(target_test_loader):
+        if i >= 16:
+            break
+        img, label = test_data
+        label = label.numpy()
+        img = img.cuda()
+        target_label_list.append(label)
+        target_img_list.append(img)
+
+    target_img_list = torch.stack(target_img_list)
+    target_img_list = target_img_list.view(-1, 3, 28, 28)
+
+    # Stack source_list + target_list
+    combined_label_list = source_label_list
+    combined_label_list.extend(target_label_list)
+    combined_img_list = torch.cat((source_img_list, target_img_list), 0)
+
+    source_domain_list = torch.zeros(512).type(torch.LongTensor)
+    target_domain_list = torch.ones(512).type(torch.LongTensor)
+    combined_domain_list = torch.cat((source_domain_list, target_domain_list), 0).cuda()
+
+    print("Extract features to draw T-SNE plot...")
+    combined_feature = encoder(combined_img_list)  # combined_feature : 1024,2352
+
     tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=3000)
-    reduced_features = tsne.fit_transform(features)
+    dann_tsne = tsne.fit_transform(combined_feature.detach().cpu().numpy())
 
-    plt.figure(figsize=(8, 6))
-    plt.scatter(reduced_features[:, 0], reduced_features[:, 1], alpha=0.5)
-    plt.title(title)
-    plt.xlabel("t-SNE component 1")
-    plt.ylabel("t-SNE component 2")
-    plt.grid()
-    plt.show()
+    print('Draw plot ...')
+    save_name = save_name + '_' + str(training_mode)
+    plot_embedding(dann_tsne, combined_label_list, combined_domain_list, training_mode, save_name)
 
-def main():
-    source_train_loader = mnist.mnist_train_loader
-    target_train_loader = mnistm.mnistm_train_loader
 
-    if torch.cuda.is_available():
-        # get_free_gpu()
-        print('Running GPU : {}'.format(torch.cuda.current_device()))
-        encoder = model.Extractor().cuda()
-        classifier = model.Classifier().cuda()
-        discriminator = model.Discriminator().cuda()
+def visualize_input():
+    source_test_loader = mnist.mnist_test_loader
+    target_test_loader = mnistm.mnistm_test_loader
 
-        # 进行 Source Only 和 DANN 训练
-        train.source_only(encoder, classifier, source_train_loader, target_train_loader, save_name)
-        train.dann(encoder, classifier, discriminator, source_train_loader, target_train_loader, save_name)
+    # Get source_test samples
+    source_label_list = []
+    source_img_list = []
+    for i, test_data in enumerate(source_test_loader):
+        if i >= 16:  # to get only 512 samples
+            break
+        img, label = test_data
+        label = label.numpy()
+        img = img.cuda()
+        img = torch.cat((img, img, img), 1)  # MNIST channel 1 -> 3
+        source_label_list.append(label)
+        source_img_list.append(img)
 
-        # 提取特征并进行可视化
-        # 假设你有一个函数可以提取特征，这里你需要根据你的模型架构来实现
-        original_mnist_features = extract_features(encoder, classifier, source_train_loader)
-        mnist_m_features = extract_features(encoder, classifier, target_train_loader)
+    source_img_list = torch.stack(source_img_list)
+    source_img_list = source_img_list.view(-1, 3, 28, 28)
 
-        # 假设你已经从训练中获得了源域和 DANN 的特征
-        source_only_features = extract_features(encoder, classifier, source_train_loader)  # 源域特征
-        dann_features = extract_features(encoder, classifier, target_train_loader)  # DANN特征
+    # Get target_test samples
+    target_label_list = []
+    target_img_list = []
+    for i, test_data in enumerate(target_test_loader):
+        if i >= 16:
+            break
+        img, label = test_data
+        label = label.numpy()
+        img = img.cuda()
+        target_label_list.append(label)
+        target_img_list.append(img)
 
-        # 可视化每个数据集的特征
-        visualize_tsne(original_mnist_features, "Original MNIST Features")
-        visualize_tsne(mnist_m_features, "MNIST-M Features")
-        visualize_tsne(source_only_features, "Features After Source Only Training")
-        visualize_tsne(dann_features, "Features After DANN Training")
+    target_img_list = torch.stack(target_img_list)
+    target_img_list = target_img_list.view(-1, 3, 28, 28)
 
-    else:
-        print("There is no GPU -_-!")
+    # Stack source_list + target_list
+    combined_label_list = source_label_list
+    combined_label_list.extend(target_label_list)
+    combined_img_list = torch.cat((source_img_list, target_img_list), 0)
 
+    source_domain_list = torch.zeros(512).type(torch.LongTensor)
+    target_domain_list = torch.ones(512).type(torch.LongTensor)
+    combined_domain_list = torch.cat((source_domain_list, target_domain_list), 0).cuda()
+
+    print("Extract features to draw T-SNE plot...")
+    combined_feature = combined_img_list  # combined_feature : 1024,3,28,28
+    combined_feature = combined_feature.view(1024, -1)  # flatten
+    # print(type(combined_feature), combined_feature.shape)
+
+    tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=3000)
+    dann_tsne = tsne.fit_transform(combined_feature.detach().cpu().numpy())
+    print('Draw plot ...')
+    save_name = 'input_tsne_plot'
+    plot_embedding(dann_tsne, combined_label_list, combined_domain_list, 'input', 'mnist_n_mnistM')
+
+
+# Step 1: Visualize the Original Input for MNIST and MNIST-M
+def visualize_original_input():
+    print("Visualizing original MNIST and MNIST-M inputs...")
+    visualize_input()  # 调用已有的 visualize_input 函数
+
+# Step 2: Visualize Features After DABP with Source Only
+def visualize_after_dabp_source():
+    print("Visualizing features after DABP (source only)...")
+    encoder = load_encoder("source_only")  # 加载仅基于 source 的 encoder
+    save_name = "dabp_source_only"
+    visualize(encoder, "source_only", save_name)
+
+# Step 3: Visualize Features After DABP with DANN
+def visualize_after_dabp_dann():
+    print("Visualizing features after DABP (DANN)...")
+    encoder = load_encoder("dann")  # 加载 DANN 模式的 encoder
+    save_name = "dabp_dann"
+    visualize(encoder, "dann", save_name)
+
+# 调用各个可视化步骤
 if __name__ == "__main__":
-    main()
+    visualize_original_input()       # 可视化原始输入
+    visualize_after_dabp_source()    # 仅基于 source 的 DABP 特征可视化
+    visualize_after_dabp_dann()      # DANN 模式的 DABP 特征可视化
