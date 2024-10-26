@@ -36,7 +36,7 @@ def plot_embedding(X, y, d, training_mode, save_name):
 
     # fig_name = 'saved_plot/' + str(training_mode) + '_' + str(save_name) + '.png'
     
-    # fig_name = '/kaggle/working/saved_plot/source_omg_source.png'
+    fig_name = 'saved_plot/source_omg_source.png'
     plt.savefig(fig_name)
     print('{} is saved'.format(fig_name))
 
