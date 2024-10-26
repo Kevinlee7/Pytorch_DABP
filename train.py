@@ -122,4 +122,4 @@ def dann(encoder, classifier, discriminator, source_train_loader, target_train_l
             test.tester(encoder, classifier, discriminator, source_test_loader, target_test_loader, training_mode='dann')
 
     save_model(encoder, classifier, discriminator, 'DANN', save_name)
-    visualize(encoder, 'source', save_name)
+    visualize(encoder, 'DANN', save_name)
