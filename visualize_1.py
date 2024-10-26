@@ -9,10 +9,6 @@ import numpy as np
 import itertools
 import os
 
-
-source_test_loader = mnist.mnist_test_loader
-target_test_loader = mnistm.mnistm_test_loader
-
 def plot_embedding(X, y, d, training_mode, save_name):
     x_min, x_max = np.min(X, 0), np.max(X, 0)
     X = (X - x_min) / (x_max - x_min)
