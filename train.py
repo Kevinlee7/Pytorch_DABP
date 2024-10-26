@@ -49,7 +49,7 @@ def source_only(encoder, classifier, source_train_loader, target_train_loader, s
 
             class_loss.backward()
             optimizer.step()
-            if (batch_idx + 1) % 500 == 0:
+            if (batch_idx + 1) % 2000 == 0:
                 print('[{}/{} ({:.0f}%)]\tClass Loss: {:.6f}'.format(batch_idx * len(source_image), len(source_train_loader.dataset), 100. * batch_idx / len(source_train_loader), class_loss.item()))
 
         if (epoch + 1) % 10 == 0:
@@ -114,7 +114,7 @@ def dann(encoder, classifier, discriminator, source_train_loader, target_train_l
             total_loss.backward()
             optimizer.step()
 
-            if (batch_idx + 1) % 500 == 0:
+            if (batch_idx + 1) % 2000 == 0:
                 print('[{}/{} ({:.0f}%)]\tLoss: {:.6f}\tClass Loss: {:.6f}\tDomain Loss: {:.6f}'.format(
                     batch_idx * len(target_image), len(target_train_loader.dataset), 100. * batch_idx / len(target_train_loader), total_loss.item(), class_loss.item(), domain_loss.item()))
 
