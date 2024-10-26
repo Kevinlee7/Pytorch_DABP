@@ -93,3 +93,4 @@ def visualize_input():
     save_name = 'input_tsne_plot'
     plot_embedding(dann_tsne, combined_label_list, combined_domain_list, 'input', 'mnist_n_mnistM')
 
+visualize_input()
