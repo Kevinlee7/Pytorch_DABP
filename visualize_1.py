@@ -3,7 +3,6 @@ import train
 import mnist
 import mnistm
 import model
-from utils import get_free_gpu, extract_features  # 假设你有一个提取特征的函数
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import numpy as np
