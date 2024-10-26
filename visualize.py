@@ -1,10 +1,11 @@
 import torch
+import train
 import mnist
 import mnistm
 import model
+from utils import get_free_gpu, extract_features  # 假设你有一个提取特征的函数
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
-from utils import extract_features  # 假设你有一个提取特征的函数
 
 # 定义保存名称
 save_name = 'omg'
@@ -27,11 +28,18 @@ def main():
     target_train_loader = mnistm.mnistm_train_loader
 
     if torch.cuda.is_available():
+        # get_free_gpu()
         print('Running GPU : {}'.format(torch.cuda.current_device()))
         encoder = model.Extractor().cuda()
         classifier = model.Classifier().cuda()
+        discriminator = model.Discriminator().cuda()
 
-        # 提取特征
+        # 进行 Source Only 和 DANN 训练
+        train.source_only(encoder, classifier, source_train_loader, target_train_loader, save_name)
+        train.dann(encoder, classifier, discriminator, source_train_loader, target_train_loader, save_name)
+
+        # 提取特征并进行可视化
+        # 假设你有一个函数可以提取特征，这里你需要根据你的模型架构来实现
         original_mnist_features = extract_features(encoder, classifier, source_train_loader)
         mnist_m_features = extract_features(encoder, classifier, target_train_loader)
 
